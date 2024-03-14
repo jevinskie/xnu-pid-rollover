@@ -1,6 +1,6 @@
 #include "subprocesspp/subprocesspp.hpp"
 #include "common-internal.hpp"
-#include <fileperm/fileperm.h>
+#include <fileperm/fileperm.hpp>
 
 namespace SubprocessPP {
 
@@ -20,6 +20,17 @@ std::error_code Subprocess::create(const std::vector<std::string_view> &args) no
 #endif
     if (canon_ec) {
         return canon_ec;
+    }
+    if (const auto perm_res = FilePerm::check_executable(m_exe_path)) {
+        switch (perm_res) {
+        case 1:
+            return std::make_error_code(std::errc::executable_format_error);
+        case 3:
+            return std::make_error_code(std::errc::no_such_file_or_directory);
+        case 2:
+        default:
+            return std::make_error_code(std::errc::io_error);
+        }
     }
     return std::error_code();
 }
